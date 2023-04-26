@@ -1,0 +1,44 @@
+.weather-container {
+  .card {
+    border: none;
+    background-color: var( --color-weather-card-background );
+  }
+
+  .btn-primary {
+    border: 1px solid var( --color-primary );
+    background-color: var( --color-primary );
+  }
+
+  .rounded-button {
+    height: 2.5rem;
+    border: none;
+    border-radius: 100%;
+    color: var( --color-weather-text-tertiary ); 
+
+    &.white-background {
+      background-color: #ffffff;
+    }
+
+    &.transparent-background {
+      background-color: transparent;
+      border: 2px solid var( --color-weather-text-tertiary ); 
+    }
+  }
+
+  p, span {
+    color: var( --color-weather-text );
+  }
+
+  .text-primary {
+    color: var( --color-weather-text-primary ) !important;
+  }
+
+  .text-secondary {
+    color: var( --color-weather-text-secondary ) !important;
+  }
+
+  .text-tertiary {
+    color: var( --color-weather-text-tertiary ) !important;
+  }
+
+}
