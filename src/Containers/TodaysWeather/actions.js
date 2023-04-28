@@ -9,8 +9,8 @@ const HOC = WrappedComponent => {
   const WithHOC = props => {
     const [ state, setState ] = useState({
       onLoadWeatherHOC: false,
-      countries: [],
       cities: [],
+      countries: [],
       selectedCountry: null,
       selectedCity: null,
       selectedWeather: {},
@@ -22,37 +22,41 @@ const HOC = WrappedComponent => {
 
     const onChangeWeatherHOC = ( key, value ) => setState({ ...state, [ key ]: value })
 
-    const getCountries = ( name, state ) => Get(
-      `https://restcountries.com/v3.1/name/${ name }`,
-      payload => getCountriesSuccess( payload, state ),
-      () => getCountriesError( state ),
-      load
+    const getCountries = ( countriesQuery, callback, state, setCountriesIsLoading ) => Get(
+      `https://restcountries.com/v3.1/name/${ countriesQuery }`,
+      payload => getCountriesSuccess( payload, callback, state, setCountriesIsLoading ),
+      () => getCountriesError( state, callback, setCountriesIsLoading ),
+      setCountriesIsLoading
     )
-    const getCountriesSuccess = ( payload, state ) => setState({ 
-      ...state,
-      onLoadWeatherHOC: false,
-      weatherHocError: {},
-      countries: payload.map( country => ({
+    const getCountriesSuccess = ( payload, callback, state, setCountriesIsLoading ) => {
+      const tmpState = cloneDeep( state )
+      const tmpCountries = payload.map( country => ({
         latlng: country.latlng,
         label: country.name.official,
         value: country.cca2
       }))
-    })
-    const getCountriesError = state => setState({ 
-      ...state,
-      onLoadWeatherHOC: false,
-      weatherHocError: {
-        ...state.weatherHocError,
-        selectedCountry: 'Invalid country'
-      }
-    })
 
-    const getCities = async( citiesQuery, state ) => {
-      setState({
+      tmpState.countries = tmpCountries
+      tmpState.weatherHocError = {}
+
+      setState( tmpState )
+      setCountriesIsLoading( false )
+      return callback( tmpCountries )
+    }
+    const getCountriesError = ( state, callback, setCountriesIsLoading ) => {
+      setState({ 
         ...state,
-        onLoadWeatherHOC: true
+        weatherHocError: {
+          ...state.weatherHocError,
+          selectedCountry: 'Invalid country'
+        }
       })
+      setCountriesIsLoading( false )
+      return callback( [] )
+    }
 
+    const getCities = async( citiesQuery, callback, state, setCitiesIsLoading ) => {
+      setCitiesIsLoading( true )
       const geonames = Geonames({
         username: GEONAMES_ORG_USERNAME,
         encoding: 'JSON'
@@ -68,34 +72,43 @@ const HOC = WrappedComponent => {
       return await geonames.search(
         geonamesSearchParams
       ).then( payload => (
-        getCitiesSuccess( payload, state )
+        getCitiesSuccess( payload, state, callback, setCitiesIsLoading )
       )).catch( () => (
-        getCitiesError( state )
+        getCitiesError( state, callback, setCitiesIsLoading )
       ))
     }
-    const getCitiesSuccess = ( payload, state ) => setState({ 
-      ...state,
-      onLoadWeatherHOC: false,
-      weatherHocError: {},
-      cities: payload.geonames.map( city => ({
+    const getCitiesSuccess = ( payload, state, callback, setCitiesIsLoading ) => {
+      const tmpCities = payload.geonames.map( city => ({
         lat: city.lat,
         lng: city.lng,
         label: `${ city.name }, ${ city.countryName }`,
-        value: city.geonameId
+        value: city.geonameId.toString()
       }))
-    })
-    const getCitiesError = state => setState({ 
-      ...state,
-      onLoadWeatherHOC: false,
-      weatherHocError: {
-        ...state.weatherHocError,
-        selectedCity: 'Invalid city'
-      }
-    })
+      const tmpState = cloneDeep( state ) 
+
+      tmpState.cities = tmpCities
+      tmpState.weatherHocError = tmpCities.length === 0 
+        ? { ...state.weatherHocError, selectedCity: 'City not found' }
+        : {}
+        
+      setState( tmpState )
+      setCitiesIsLoading( false )
+      return callback( tmpCities )
+    }
+    const getCitiesError = ( state, callback, setCitiesIsLoading ) => {
+      setState({ 
+        ...state,
+        weatherHocError: {
+          ...state.weatherHocError,
+          selectedCity: 'Invalid city'
+        }
+      })
+      setCitiesIsLoading( false )
+      return callback( [] )
+    }
 
     const getSelectedWeather = ( lat, lon, label ) => Get(
-      ` https://cors-anywhere.herokuapp.com/` + 
-      `https://api.openweathermap.org/data/2.5/weather?` +
+      'https://api.openweathermap.org/data/2.5/weather?' +
       `lat=${ lat }&lon=${ lon }&appid=${ OPENWEATHER_APP_ID }&units=metric`,
       payload => getSelectedWeatherSuccess( payload, label ),
       getSelectedWeatherError,
@@ -130,8 +143,6 @@ const HOC = WrappedComponent => {
     const resetWeatherHOC = () => setState({
       ...state,
       onLoadWeatherHOC: false,
-      countries: [],
-      cities: [],
       selectedCountry: null,
       selectedCity: null,
       weatherHocError: {}

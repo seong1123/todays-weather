@@ -1,30 +1,19 @@
 import { useState, useEffect, useRef, useCallback } from 'react'
 import { MdSearch, MdClose } from 'react-icons/md'
-import { isEmpty, debounce } from 'lodash'
+import { isEmpty } from 'lodash'
 import { 
   Row, Col, 
   Form, FormGroup, FormText,
-  Button
+  Button, UncontrolledTooltip
 } from 'reactstrap'
-import ReactSelect from 'react-select'
+import AsyncSelect from 'react-select/async'
+import debounce from 'debounce-promise'
 
 const WeatherSearchBar = props => {
   const citiesDropdownRef = useRef()
   const countriesDropdownRef = useRef()
-  const [ citiesQuery, setCitiesQuery ] = useState( '' )
-  const [ countriesQuery, setCountriesQuery ] = useState( '' )
-
-  useEffect( () => {
-    if( !isEmpty( citiesQuery ) && citiesQuery.indexOf( ' ') === -1 ) {
-      searchCities( citiesQuery, props.weatherHocState )
-    }
-  }, [ citiesQuery ] )
-  
-  useEffect( () => {
-    if( !isEmpty( countriesQuery ) ) {
-      searchCountries( countriesQuery, props.weatherHocState )
-    }
-  }, [ countriesQuery ] )
+  const [ citiesIsLoading, setCitiesIsLoading ] = useState( false )
+  const [ countriesIsLoading, setCountriesIsLoading ] = useState( false )
 
   useEffect( () => {
     if( !isEmpty( props.weatherHocError?.selectedCity ) ) {
@@ -35,9 +24,19 @@ const WeatherSearchBar = props => {
     }
   }, [ props.weatherHocError ] )
 
+  useEffect( () => {
+    if( !isEmpty( props.selectedWeather ) ) {
+      document.getElementById( 'weather-search-histories-container' ).scrollTop = 0
+    }
+  }, [ props.selectedWeather ] )
+
   const searchCities = useCallback(
     debounce( 
-      ( citiesQuery, weatherHocState ) => props.getCities( citiesQuery, weatherHocState ), 
+      (
+        countriesQuery, 
+        callback, 
+        weatherHocState
+      ) => props.getCities( countriesQuery, callback, weatherHocState, setCitiesIsLoading ),
       500 
     ), 
     [] 
@@ -45,30 +44,39 @@ const WeatherSearchBar = props => {
 
   const searchCountries = useCallback(
     debounce( 
-      ( countriesQuery, weatherHocState ) => props.getCountries( countriesQuery, weatherHocState ), 
+      ( 
+        countriesQuery, 
+        callback, 
+        weatherHocState
+      ) => props.getCountries( countriesQuery, callback, weatherHocState, setCountriesIsLoading ), 
       500 
     ), 
     [] 
   )
 
   return(
-    <Form style={{ marginBottom: !isEmpty( props.selectedWeather ) ? "15vh" : "2rem" }} >
+    <Form style={{ marginBottom: !isEmpty( props.selectedWeather ) ? "7vh" : "2rem" }} >
       <Row>
         <Col md={ 5 }>
           <FormGroup>
-            <ReactSelect
+            <AsyncSelect
               placeholder='City'
               ref={ citiesDropdownRef }
-              options={ props.cities }
               value={ props.selectedCity } 
+              isLoading={ citiesIsLoading }
+              defaultOptions={ props.cities }
               isClearable={ !isEmpty( props.selectedCity ) }
-              onInputChange={ e => setCitiesQuery( e ) }
               onChange={ e => props.onChangeWeatherHOC( 'selectedCity', e ) }
               noOptionsMessage={ () => 'Enter city name to start the search' }
+              loadOptions={ ( citiesQuery, callback ) => searchCities(
+                citiesQuery, 
+                callback, 
+                props.weatherHocState
+              )}
               styles={{
                 menu: styles => ({ ...styles, zIndex: 9999 }),
-                singleValue: styles => ({ ...styles, color: props.isLightThemed ? '#000000' : '#ffffff' }),
                 input: styles => ({ ...styles, color: props.isLightThemed ? '#000000' : '#ffffff' }),
+                singleValue: styles => ({ ...styles, color: props.isLightThemed ? '#000000' : '#ffffff' }),
                 placeholder: styles => ({ ...styles, color: props.isLightThemed ? '#000000' : '#ffffff' }),
                 control: styles => ({
                   ...styles,
@@ -86,19 +94,24 @@ const WeatherSearchBar = props => {
         </Col>
         <Col md={ 5 }>
           <FormGroup>
-            <ReactSelect
+            <AsyncSelect
               placeholder='Country'
               ref={ countriesDropdownRef }
-              options={ props.countries }
               value={ props.selectedCountry } 
+              isLoading={ countriesIsLoading }
+              defaultOptions={ props.countries }
               isClearable={ !isEmpty( props.selectedCountry ) }
-              onInputChange={ e => setCountriesQuery( e ) }
-              noOptionsMessage={ () => 'Enter country name to start the search' }
               onChange={ e => props.onChangeWeatherHOC( 'selectedCountry', e ) }
+              noOptionsMessage={ () => 'Enter country name to start the search' }
+              loadOptions={ ( countriesQuery, callback ) => searchCountries(
+                countriesQuery,
+                callback,
+                props.weatherHocState
+              )}
               styles={{
                 menu: styles => ({ ...styles, zIndex: 9999 }),
-                singleValue: styles => ({ ...styles, color: props.isLightThemed ? '#000000' : '#ffffff' }),
                 input: styles => ({ ...styles, color: props.isLightThemed ? '#000000' : '#ffffff' }),
+                singleValue: styles => ({ ...styles, color: props.isLightThemed ? '#000000' : '#ffffff' }),
                 placeholder: styles => ({ ...styles, color: props.isLightThemed ? '#000000' : '#ffffff' }),
                 control: styles => ({
                   ...styles,
@@ -118,6 +131,7 @@ const WeatherSearchBar = props => {
           <FormGroup className='d-flex flex-row justify-content-end'>
             <Button 
               color='primary'
+              id='weather-search-button'
               style={{ height: '38px', marginRight: '0.5rem' }} 
               disabled={ isEmpty( props.selectedCountry ) && isEmpty( props.selectedCity ) }
               onClick={ () => {
@@ -134,11 +148,18 @@ const WeatherSearchBar = props => {
               }}>
               <MdSearch size='1rem' />
             </Button>
+            <UncontrolledTooltip target='weather-search-button'>
+              Check weather
+            </UncontrolledTooltip>
             <Button 
               color='primary'
+              id='weather-clear-button'
               style={{ height: '38px' }} 
               onClick={ () => props.resetWeatherHOC() } >
               <MdClose size='1rem' />
+              <UncontrolledTooltip target='weather-clear-button'>
+                Reset
+              </UncontrolledTooltip>
             </Button>
           </FormGroup>
         </Col>
