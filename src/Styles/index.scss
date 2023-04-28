@@ -1,0 +1,7 @@
+@mixin screen-size-smaller-than ( $breakpoint ) {
+  @if $breakpoint == md {
+    @media( max-width: 768px ) {
+      @content;
+    }
+  }
+}

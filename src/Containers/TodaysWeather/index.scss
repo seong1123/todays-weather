@@ -1,4 +1,22 @@
+@import 'Styles';
+
 .weather-container {
+  p, span {
+    color: var( --color-weather-text );
+  }
+
+  .text-primary {
+    color: var( --color-weather-text-primary ) !important;
+  }
+
+  .text-secondary {
+    color: var( --color-weather-text-secondary ) !important;
+  }
+
+  .text-tertiary {
+    color: var( --color-weather-text-tertiary ) !important;
+  }
+
   .card {
     border: none;
     background-color: var( --color-weather-card-background );
@@ -25,20 +43,15 @@
     }
   }
 
-  p, span {
-    color: var( --color-weather-text );
+  #weather-selected-info-container {
+    display: flex;
+    flex-direction: row;
+    flex-wrap: wrap;
+    justify-content: between;
   }
-
-  .text-primary {
-    color: var( --color-weather-text-primary ) !important;
+  @include screen-size-smaller-than ( md ) {
+    #weather-selected-info-container {
+      flex-direction: column-reverse;
+    }
   }
-
-  .text-secondary {
-    color: var( --color-weather-text-secondary ) !important;
-  }
-
-  .text-tertiary {
-    color: var( --color-weather-text-tertiary ) !important;
-  }
-
 }

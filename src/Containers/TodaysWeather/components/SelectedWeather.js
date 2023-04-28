@@ -39,7 +39,7 @@ const SelectedWeather = props => {
               zIndex: "0"
             }}
           />
-          <div className='d-flex flex-row flex-wrap justify-content-between mb-3'>
+          <div id='weather-selected-info-container' className='mb-3' >
             <div className='d-flex flex-column col-12 col-md-4 justify-content-end align-items-end text-end'>
               <span 
                 className='text-secondary'

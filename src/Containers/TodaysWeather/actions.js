@@ -3,7 +3,7 @@ import { DateTime } from 'luxon'
 import { cloneDeep } from 'lodash'
 import Geonames from 'geonames.js'
 
-import { Get } from 'Utils/axios'
+import { Get } from 'Utils/ajax'
 
 const HOC = WrappedComponent => {
   const WithHOC = props => {
